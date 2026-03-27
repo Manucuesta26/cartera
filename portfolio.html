@@ -81,9 +81,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
   <div class="hdr"><strong id="today"></strong><span id="updated">—</span></div>
 </div>
 <div class="apibox" id="apibox">
-  <h2>🔑 API Key de Financial Modeling Prep</h2>
-  <p>Regístrate gratis en <a href="https://financialmodelingprep.com/register" target="_blank">financialmodelingprep.com</a> y pega aquí tu clave. Se guarda solo en tu dispositivo.</p>
-  <input class="apiinput" id="apikey-input" type="text" placeholder="Tu API key…" />
+  <h2>🔑 API Key de Twelve Data</h2>
+  <p>Regístrate gratis en <a href="https://twelvedata.com/register" target="_blank">twelvedata.com</a> y pega aquí tu clave. Plan gratuito: 800 llamadas/día. Se guarda solo en tu dispositivo.</p>
+  <input class="apiinput" id="apikey-input" type="text" placeholder="Tu API key de Twelve Data…" />
   <button class="apibtn" onclick="saveKey()">Guardar y cargar precios</button>
 </div>
 <div class="hero">
@@ -162,13 +162,13 @@ const TR=[
   {id:"tr-cspx",name:"iShares Core S&P 500",isin:"IE00B5BMR087",sym:"CSPX", type:"etf",  qty:2.377735, cost:1254.00,cur:"USD"},
   {id:"tr-goog",name:"Alphabet Inc. C",     isin:"US02079K1079",sym:"GOOG", type:"stock",qty:1.811331, cost:250.89, cur:"USD"},
   {id:"tr-unh", name:"UnitedHealth Group",  isin:"US91324P1021",sym:"UNH",  type:"stock",qty:1.000386, cost:260.00, cur:"USD"},
-  {id:"tr-lvmh",name:"LVMH",                isin:"FR0000121014",sym:"MC.PA",type:"stock",qty:0.475465, cost:252.05, cur:"EUR"},
+  {id:"tr-lvmh",name:"LVMH",               isin:"FR0000121014",sym:"MC:PA",type:"stock",qty:0.475465, cost:252.05, cur:"EUR"},
 ];
 const MI=[
-  {id:"mi-asts",name:"AST SpaceMobile",       isin:"US00217D1000",sym:"ASTS",  type:"stock",qty:15,  cost:309.66,cur:"USD"},
-  {id:"mi-cdlx",name:"Cardlytics Inc",         isin:"US14161W1053",sym:"CDLX",  type:"stock",qty:250, cost:278.42,cur:"USD"},
-  {id:"mi-slqt",name:"SelectQuote Inc",        isin:"US81617C1036",sym:"SLQT",  type:"stock",qty:100, cost:213.83,cur:"USD"},
-  {id:"mi-nxt", name:"Nueva Expresión Textil", isin:"ES0165960018",sym:"NXT.MC",type:"stock",qty:1109,cost:403.47,cur:"EUR"},
+  {id:"mi-asts",name:"AST SpaceMobile",      isin:"US00217D1000",sym:"ASTS",  type:"stock",qty:15,  cost:309.66,cur:"USD"},
+  {id:"mi-cdlx",name:"Cardlytics Inc",        isin:"US14161W1053",sym:"CDLX", type:"stock",qty:250, cost:278.42,cur:"USD"},
+  {id:"mi-slqt",name:"SelectQuote Inc",       isin:"US81617C1036",sym:"SLQT", type:"stock",qty:100, cost:213.83,cur:"USD"},
+  {id:"mi-nxt", name:"Nueva Expresión Textil",isin:"ES0165960018",sym:"NXT",  type:"stock",qty:1109,cost:403.47,cur:"EUR"},
 ];
 const FUNDS=[
   {name:"iShares US Index (S&P 500)",value:2324.11},{name:"ESG Screened Corp Bonds",value:1036.25},
@@ -185,7 +185,7 @@ const TR_CASH=306.51,MI_CASH=3445.20,UNI_CASH=5309.65;
 const MIFV=6914.68,MIFC=6648.32,UNIFV=19460.25,UNIFC=18719.44;
 const ALL=[...TR,...MI];
 let FX=0.92;
-let API_KEY=localStorage.getItem('fmp_key')||'';
+let API_KEY=localStorage.getItem('td_key')||'';
 const prices={};
 const manual=JSON.parse(localStorage.getItem('mp')||'{}');
 const f=(n,d=2)=>Number(n).toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -202,7 +202,7 @@ function saveKey(){
   const k=document.getElementById('apikey-input').value.trim();
   if(!k){alert('Introduce una API key válida');return;}
   API_KEY=k;
-  localStorage.setItem('fmp_key',k);
+  localStorage.setItem('td_key',k);
   document.getElementById('apibox').style.display='none';
   document.getElementById('rbtn').style.display='block';
   loadAll();
@@ -213,23 +213,45 @@ function fetchWithTimeout(url,ms){
     fetch(url).then(r=>{clearTimeout(t);resolve(r);}).catch(e=>{clearTimeout(t);reject(e);});
   });
 }
-async function fetchFMP(symbols){
-  const url=`https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${API_KEY}`;
+async function fetchPrices(symbols){
+  const url=`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${API_KEY}`;
   try{
     const r=await fetchWithTimeout(url,10000);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
-    if(!Array.isArray(data))throw new Error('bad response');
     const map={};
-    data.forEach(q=>{if(q.symbol&&q.price)map[q.symbol]={price:q.price,prev:q.previousClose||q.price,currency:q.currency||'USD'};});
+    if(symbols.length===1){
+      if(data.price&&!data.code)map[symbols[0]]={price:parseFloat(data.price),prev:null};
+    }else{
+      Object.entries(data).forEach(([sym,val])=>{
+        if(val&&val.price&&!val.code)map[sym]={price:parseFloat(val.price),prev:null};
+      });
+    }
     return map;
-  }catch(e){console.error('FMP:',e);return{};}
+  }catch(e){console.error('TwelveData:',e);return{};}
+}
+async function fetchPrevClose(symbols){
+  const url=`https://api.twelvedata.com/eod?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${API_KEY}`;
+  try{
+    const r=await fetchWithTimeout(url,10000);
+    if(!r.ok)return{};
+    const data=await r.json();
+    const map={};
+    if(symbols.length===1){
+      if(data.close&&!data.code)map[symbols[0]]=parseFloat(data.close);
+    }else{
+      Object.entries(data).forEach(([sym,val])=>{
+        if(val&&val.close&&!val.code)map[sym]=parseFloat(val.close);
+      });
+    }
+    return map;
+  }catch{return{};}
 }
 async function fetchFX(){
   try{
-    const r=await fetchWithTimeout(`https://financialmodelingprep.com/api/v3/fx/EURUSD?apikey=${API_KEY}`,8000);
+    const r=await fetchWithTimeout(`https://api.twelvedata.com/price?symbol=USD/EUR&apikey=${API_KEY}`,8000);
     const d=await r.json();
-    if(d&&d[0]&&d[0].ask)return 1/d[0].ask;
+    if(d.price&&!d.code)return parseFloat(d.price);
   }catch{}
   return 0.92;
 }
@@ -238,7 +260,7 @@ function calc(pos){
   const r=m?{price:m.p,prev:m.p,currency:m.c,isManual:true}:prices[pos.id];
   if(!r)return{ve:0,de:0,pnl:0,r:null,isManual:false};
   const pe=toEur(r.price,pos.cur==='EUR'?'EUR':r.currency||pos.cur);
-  const pre=toEur(r.prev,pos.cur==='EUR'?'EUR':r.currency||pos.cur);
+  const pre=toEur(r.prev||r.price,pos.cur==='EUR'?'EUR':r.currency||pos.cur);
   const ve=pe*pos.qty;
   return{ve,de:(pe-pre)*pos.qty,pnl:ve-pos.cost,r,pe,isManual:!!r.isManual};
 }
@@ -294,11 +316,7 @@ function applyM(id,cur){
   localStorage.setItem('mp',JSON.stringify(manual));
   render();
 }
-function clearM(id){
-  delete manual[id];
-  localStorage.setItem('mp',JSON.stringify(manual));
-  render();
-}
+function clearM(id){delete manual[id];localStorage.setItem('mp',JSON.stringify(manual));render();}
 function renderDeps(){
   let tv=0,tc=0;
   document.getElementById('dep-list').innerHTML=DEPS.map(d=>{
@@ -339,8 +357,7 @@ function render(){
   const grand=trV+TR_CASH+MIFV+miV+depV+MI_CASH+UNIFV+UNI_CASH;
   const invV=trV+MIFV+miV+UNIFV;
   const invC=TR.reduce((s,p)=>s+p.cost,0)+MIFC+MI.reduce((s,p)=>s+p.cost,0)+UNIFC;
-  const pnl=invV-invC;
-  const pnlP=invC>0?(pnl/invC*100):0;
+  const pnl=invV-invC;const pnlP=invC>0?(pnl/invC*100):0;
   document.getElementById('val-total').textContent=fe(grand);
   document.getElementById('sub-total').innerHTML=`<span style="color:var(--muted)">USD/EUR ${f(FX,4)}</span>`;
   document.getElementById('val-pnl').textContent=`${sg(pnl)}${fe(pnl)}`;
@@ -358,17 +375,23 @@ async function loadAll(){
   const btn=document.getElementById('rbtn');
   btn.disabled=true;btn.textContent='↻ Actualizando…';
   const syms=[...new Set(ALL.filter(p=>!manual[p.id]).map(p=>p.sym))];
-  const[fmpData,fxRate]=await Promise.all([syms.length?fetchFMP(syms):{},fetchFX()]);
+  const[priceData,prevData,fxRate]=await Promise.all([
+    syms.length?fetchPrices(syms):{},
+    syms.length?fetchPrevClose(syms):{},
+    fetchFX()
+  ]);
   FX=fxRate;
-  ALL.forEach(pos=>{if(!manual[pos.id]&&fmpData[pos.sym])prices[pos.id]=fmpData[pos.sym];});
+  ALL.forEach(pos=>{
+    if(!manual[pos.id]&&priceData[pos.sym]){
+      prices[pos.id]={price:priceData[pos.sym].price,prev:prevData[pos.sym]||priceData[pos.sym].price,currency:'USD'};
+    }
+  });
   render();
   document.getElementById('updated').textContent=new Date().toLocaleTimeString('es-ES');
   btn.disabled=false;btn.textContent='↻ Actualizar precios';
 }
 function setTab(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>{
-    el.classList.toggle('active',['all','tr','mi','uni','dep'][i]===t);
-  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['all','tr','mi','uni','dep'][i]===t);});
   ['sec-tr','sec-mi','sec-uni','sec-dep'].forEach(s=>document.getElementById(s).classList.add('hidden'));
   if(t==='all'||t==='tr')document.getElementById('sec-tr').classList.remove('hidden');
   if(t==='all'||t==='mi')document.getElementById('sec-mi').classList.remove('hidden');
@@ -377,11 +400,7 @@ function setTab(t){
 }
 document.getElementById('today').textContent=new Date().toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
 render();
-if(API_KEY){
-  document.getElementById('apibox').style.display='none';
-  document.getElementById('rbtn').style.display='block';
-  loadAll();
-}
+if(API_KEY){document.getElementById('apibox').style.display='none';document.getElementById('rbtn').style.display='block';loadAll();}
 </script>
 </body>
 </html>
