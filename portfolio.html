@@ -20,7 +20,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
 .apibox a{color:var(--accent)}
 .apiinput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Inter',monospace;font-size:13px;padding:10px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:10px}
 .apiinput:focus{border-color:var(--accent)}
-.apibtn{width:100%;padding:12px;background:var(--accent);color:#000;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer}
+.apibtn{width:100%;padding:12px;background:var(--accent);color:#000;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;margin-bottom:8px}
+.resetbtn{width:100%;padding:10px;background:none;color:var(--muted);border:1px solid var(--border);font-family:'Inter',sans-serif;font-size:11px;border-radius:10px;cursor:pointer}
 .hero{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .hc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;position:relative;overflow:hidden}
 .hc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);border-radius:16px 16px 0 0}
@@ -70,22 +71,28 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
 .rbtn{width:100%;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;color:var(--accent);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;-webkit-appearance:none}
 .rbtn:active{background:var(--accent);color:#000}
 .rbtn:disabled{opacity:.4}
-.sp{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px}
+.keybtn{width:100%;padding:10px;background:none;border:1px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;border-radius:10px;cursor:pointer;margin-top:6px;-webkit-appearance:none}
+.errmsg{background:#2a1a1a;border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--red);margin-bottom:12px;display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none}
 </style>
 </head>
 <body>
+
 <div class="header">
   <div><h1>Mi <span>Cartera</span></h1><p>Manuel Cuesta Gallego</p></div>
   <div class="hdr"><strong id="today"></strong><span id="updated">—</span></div>
 </div>
+
 <div class="apibox" id="apibox">
   <h2>🔑 API Key de Twelve Data</h2>
-  <p>Regístrate gratis en <a href="https://twelvedata.com/register" target="_blank">twelvedata.com</a> y pega aquí tu clave. Plan gratuito: 800 llamadas/día. Se guarda solo en tu dispositivo.</p>
-  <input class="apiinput" id="apikey-input" type="text" placeholder="Tu API key de Twelve Data…" />
-  <button class="apibtn" onclick="saveKey()">Guardar y cargar precios</button>
+  <p>Regístrate gratis en <a href="https://twelvedata.com/register" target="_blank">twelvedata.com</a> y pega aquí tu clave. Plan gratuito: 800 llamadas/día.</p>
+  <div class="errmsg" id="errmsg"></div>
+  <input class="apiinput" id="apikey-input" type="text" placeholder="Pega tu API key aquí…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+  <button class="apibtn" onclick="saveKey()">✓ Guardar y cargar precios</button>
+  <button class="resetbtn" onclick="resetKey()">✕ Borrar key guardada y empezar de nuevo</button>
 </div>
+
 <div class="hero">
   <div class="hc" id="card-total">
     <div class="hl">Patrimonio</div>
@@ -98,12 +105,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
     <div class="hs" id="sub-pnl" style="color:var(--muted)">—</div>
   </div>
 </div>
+
 <div class="strip">
   <div class="sc"><div class="sl">Hoy</div><div class="sv" id="val-day">—</div></div>
   <div class="sc"><div class="sl">Efectivo total</div><div class="sv" id="val-cash">—</div></div>
   <div class="sc"><div class="sl">Depósitos</div><div class="sv" id="val-dep">—</div></div>
   <div class="sc"><div class="sl">USD/EUR</div><div class="sv" id="val-fx">—</div></div>
 </div>
+
 <div class="tabs">
   <div class="tab active" onclick="setTab('all')">Todo</div>
   <div class="tab" onclick="setTab('tr')">Trade Republic</div>
@@ -111,10 +120,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
   <div class="tab" onclick="setTab('uni')">Unicaja</div>
   <div class="tab" onclick="setTab('dep')">Depósitos</div>
 </div>
+
 <div id="sec-tr">
   <div class="st">Trade Republic</div>
   <div id="tr-list" class="positions"></div>
 </div>
+
 <div id="sec-mi">
   <div class="st">MyInvestor · Cartera automática</div>
   <div id="mi-funds-list" class="positions"></div>
@@ -129,6 +140,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
     </div></div>
   </div>
 </div>
+
 <div id="sec-uni" class="hidden">
   <div class="st">Unicaja</div>
   <div class="positions">
@@ -150,12 +162,16 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;paddi
   </div>
   <div class="tr"><div class="trl">Total Unicaja</div><div class="trv">24.769,90 €</div></div>
 </div>
+
 <div id="sec-dep">
   <div class="st">Depósitos MyInvestor</div>
   <div class="positions" id="dep-list"></div>
   <div class="tr"><div class="trl">Total depósitos<br><span style="font-size:9px">capital 30.000,00 €</span></div><div class="trv" id="dep-tv">—</div></div>
 </div>
+
 <button class="rbtn" id="rbtn" onclick="loadAll()" style="display:none">↻ Actualizar precios</button>
+<button class="keybtn" id="keybtn" onclick="resetKey()" style="display:none">🔑 Cambiar API key</button>
+
 <script>
 const TR=[
   {id:"tr-asts",name:"AST SpaceMobile",     isin:"US00217D1000",sym:"ASTS", type:"stock",qty:51.663779,cost:1898.40,cur:"USD"},
@@ -165,7 +181,7 @@ const TR=[
   {id:"tr-lvmh",name:"LVMH",               isin:"FR0000121014",sym:"MC:PA",type:"stock",qty:0.475465, cost:252.05, cur:"EUR"},
 ];
 const MI=[
-  {id:"mi-asts",name:"AST SpaceMobile",      isin:"US00217D1000",sym:"ASTS",  type:"stock",qty:15,  cost:309.66,cur:"USD"},
+  {id:"mi-asts",name:"AST SpaceMobile",      isin:"US00217D1000",sym:"ASTS", type:"stock",qty:15,  cost:309.66,cur:"USD"},
   {id:"mi-cdlx",name:"Cardlytics Inc",        isin:"US14161W1053",sym:"CDLX", type:"stock",qty:250, cost:278.42,cur:"USD"},
   {id:"mi-slqt",name:"SelectQuote Inc",       isin:"US81617C1036",sym:"SLQT", type:"stock",qty:100, cost:213.83,cur:"USD"},
   {id:"mi-nxt", name:"Nueva Expresión Textil",isin:"ES0165960018",sym:"NXT",  type:"stock",qty:1109,cost:403.47,cur:"EUR"},
@@ -185,68 +201,91 @@ const TR_CASH=306.51,MI_CASH=3445.20,UNI_CASH=5309.65;
 const MIFV=6914.68,MIFC=6648.32,UNIFV=19460.25,UNIFC=18719.44;
 const ALL=[...TR,...MI];
 let FX=0.92;
-let API_KEY=localStorage.getItem('td_key')||'';
+let API_KEY='';
 const prices={};
 const manual=JSON.parse(localStorage.getItem('mp')||'{}');
+
 const f=(n,d=2)=>Number(n).toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
 const fe=n=>`${f(n)} €`;
 const sg=n=>n>=0?'+':'';
 const cl=n=>n>=0?'pos':'neg';
+
 function toEur(price,cur){
   if(cur==='EUR')return price;
   if(cur==='GBp')return(price/100)/0.855;
   if(cur==='GBP')return price/0.855;
   return price*FX;
 }
+
+function showError(msg){
+  const el=document.getElementById('errmsg');
+  el.textContent=msg;el.style.display='block';
+}
+function hideError(){document.getElementById('errmsg').style.display='none';}
+
 function saveKey(){
   const k=document.getElementById('apikey-input').value.trim();
-  if(!k){alert('Introduce una API key válida');return;}
+  if(!k){showError('Introduce una API key');return;}
+  if(k.length<10){showError('La key parece demasiado corta, compruébala');return;}
+  hideError();
   API_KEY=k;
   localStorage.setItem('td_key',k);
   document.getElementById('apibox').style.display='none';
   document.getElementById('rbtn').style.display='block';
+  document.getElementById('keybtn').style.display='block';
   loadAll();
 }
+
+function resetKey(){
+  localStorage.removeItem('td_key');
+  API_KEY='';
+  document.getElementById('apikey-input').value='';
+  document.getElementById('apibox').style.display='block';
+  document.getElementById('rbtn').style.display='none';
+  document.getElementById('keybtn').style.display='none';
+  hideError();
+}
+
 function fetchWithTimeout(url,ms){
   return new Promise((resolve,reject)=>{
     const t=setTimeout(()=>reject(new Error('timeout')),ms);
     fetch(url).then(r=>{clearTimeout(t);resolve(r);}).catch(e=>{clearTimeout(t);reject(e);});
   });
 }
+
 async function fetchPrices(symbols){
-  const url=`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${API_KEY}`;
-  try{
-    const r=await fetchWithTimeout(url,10000);
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const map={};
-    if(symbols.length===1){
-      if(data.price&&!data.code)map[symbols[0]]={price:parseFloat(data.price),prev:null};
-    }else{
-      Object.entries(data).forEach(([sym,val])=>{
-        if(val&&val.price&&!val.code)map[sym]={price:parseFloat(val.price),prev:null};
-      });
-    }
-    return map;
-  }catch(e){console.error('TwelveData:',e);return{};}
+  // Fetch one by one to avoid issues with batch on free plan
+  const map={};
+  await Promise.all(symbols.map(async sym=>{
+    try{
+      const url=`https://api.twelvedata.com/price?symbol=${encodeURIComponent(sym)}&apikey=${API_KEY}`;
+      const r=await fetchWithTimeout(url,8000);
+      if(!r.ok)return;
+      const d=await r.json();
+      if(d.price&&!d.code&&!d.status){
+        map[sym]={price:parseFloat(d.price),prev:null};
+      } else if(d.code===401){
+        showError('API key inválida. Pulsa "Cambiar API key" abajo e introdúcela de nuevo.');
+      }
+    }catch(e){console.error(sym,e);}
+  }));
+  return map;
 }
+
 async function fetchPrevClose(symbols){
-  const url=`https://api.twelvedata.com/eod?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${API_KEY}`;
-  try{
-    const r=await fetchWithTimeout(url,10000);
-    if(!r.ok)return{};
-    const data=await r.json();
-    const map={};
-    if(symbols.length===1){
-      if(data.close&&!data.code)map[symbols[0]]=parseFloat(data.close);
-    }else{
-      Object.entries(data).forEach(([sym,val])=>{
-        if(val&&val.close&&!val.code)map[sym]=parseFloat(val.close);
-      });
-    }
-    return map;
-  }catch{return{};}
+  const map={};
+  await Promise.all(symbols.map(async sym=>{
+    try{
+      const url=`https://api.twelvedata.com/eod?symbol=${encodeURIComponent(sym)}&apikey=${API_KEY}`;
+      const r=await fetchWithTimeout(url,8000);
+      if(!r.ok)return;
+      const d=await r.json();
+      if(d.close&&!d.code)map[sym]=parseFloat(d.close);
+    }catch{}
+  }));
+  return map;
 }
+
 async function fetchFX(){
   try{
     const r=await fetchWithTimeout(`https://api.twelvedata.com/price?symbol=USD/EUR&apikey=${API_KEY}`,8000);
@@ -255,6 +294,7 @@ async function fetchFX(){
   }catch{}
   return 0.92;
 }
+
 function calc(pos){
   const m=manual[pos.id];
   const r=m?{price:m.p,prev:m.p,currency:m.c,isManual:true}:prices[pos.id];
@@ -264,6 +304,7 @@ function calc(pos){
   const ve=pe*pos.qty;
   return{ve,de:(pe-pre)*pos.qty,pnl:ve-pos.cost,r,pe,isManual:!!r.isManual};
 }
+
 function card(pos){
   const{ve,de,pnl,r,pe,isManual}=calc(pos);
   const ok=r!==null;
@@ -307,6 +348,7 @@ function card(pos){
     </div>
   </div>`;
 }
+
 function applyM(id,cur){
   const el=document.getElementById('inp-'+id);
   if(!el)return;
@@ -317,6 +359,7 @@ function applyM(id,cur){
   render();
 }
 function clearM(id){delete manual[id];localStorage.setItem('mp',JSON.stringify(manual));render();}
+
 function renderDeps(){
   let tv=0,tc=0;
   document.getElementById('dep-list').innerHTML=DEPS.map(d=>{
@@ -341,6 +384,7 @@ function renderDeps(){
   document.getElementById('dep-tv').innerHTML=`${fe(tv)} <span style="font-size:11px;color:var(--muted)">+${f((tv-tc)/tc*100,2)}%</span>`;
   return tv;
 }
+
 function render(){
   document.getElementById('tr-list').innerHTML=TR.map(card).join('');
   document.getElementById('mi-list').innerHTML=MI.map(card).join('');
@@ -370,10 +414,12 @@ function render(){
   document.getElementById('val-dep').textContent=fe(depV);
   document.getElementById('val-fx').textContent=f(FX,4);
 }
+
 async function loadAll(){
   if(!API_KEY)return;
   const btn=document.getElementById('rbtn');
   btn.disabled=true;btn.textContent='↻ Actualizando…';
+  hideError();
   const syms=[...new Set(ALL.filter(p=>!manual[p.id]).map(p=>p.sym))];
   const[priceData,prevData,fxRate]=await Promise.all([
     syms.length?fetchPrices(syms):{},
@@ -390,6 +436,7 @@ async function loadAll(){
   document.getElementById('updated').textContent=new Date().toLocaleTimeString('es-ES');
   btn.disabled=false;btn.textContent='↻ Actualizar precios';
 }
+
 function setTab(t){
   document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['all','tr','mi','uni','dep'][i]===t);});
   ['sec-tr','sec-mi','sec-uni','sec-dep'].forEach(s=>document.getElementById(s).classList.add('hidden'));
@@ -398,9 +445,18 @@ function setTab(t){
   if(t==='all'||t==='uni')document.getElementById('sec-uni').classList.remove('hidden');
   if(t==='all'||t==='dep'||t==='mi')document.getElementById('sec-dep').classList.remove('hidden');
 }
+
 document.getElementById('today').textContent=new Date().toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
 render();
-if(API_KEY){document.getElementById('apibox').style.display='none';document.getElementById('rbtn').style.display='block';loadAll();}
+
+// Siempre mostrar el campo de key al cargar — no usar localStorage automáticamente
+// El usuario debe introducirla manualmente cada vez para evitar problemas
+const saved=localStorage.getItem('td_key');
+if(saved){
+  document.getElementById('apikey-input').value=saved;
+  document.getElementById('apibox').querySelector('p').innerHTML+=
+    `<br><span style="color:var(--accent)">✓ Key guardada detectada. Pulsa "Guardar y cargar" para usarla.</span>`;
+}
 </script>
 </body>
 </html>
